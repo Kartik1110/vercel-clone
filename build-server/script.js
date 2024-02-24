@@ -5,7 +5,7 @@ const mime = require("mime-types");
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const dotenv = require("dotenv");
 
-dotenv.config()
+dotenv.config();
 
 const PROJECT_ID = process.env.PROJECT_ID;
 
@@ -28,7 +28,7 @@ async function init() {
   });
 
   p.stdout.on("error", function (data) {
-    console.log("Error", data.toString());
+    console.log("❗ Error", data.toString());
   });
 
   p.on("close", async function () {
@@ -37,8 +37,8 @@ async function init() {
     const distFolderPath = path.join(__dirname, "output", "dist");
     const distFolderContent = fs.readdirSync(distFolderPath, { recursive: true });
 
-    console.log(`Uploading started ...`);
-    
+    console.log(`⏳ Uploading started ...`);
+
     /* Uploading each file to S3 */
     for (const file of distFolderContent) {
       const filePath = path.join(distFolderPath, file);
@@ -46,7 +46,8 @@ async function init() {
       if (fs.lstatSync(filePath).isDirectory()) continue;
 
       const command = new PutObjectCommand({
-        Bucket: process.env.S3_BUCKET,
+        // Bucket: process.env.S3_BUCKET,
+        Bucket: "vercel-clone-output-bucket",
         Key: `__output__/${PROJECT_ID}/${file}`,
         Body: fs.createReadStream(filePath),
         ContentType: mime.lookup(filePath),
@@ -57,7 +58,7 @@ async function init() {
       console.log(`Uploaded ${filePath} ...`);
     }
 
-    console.log("✅ Upload complete!");
+    console.log("🚀 Upload complete!");
   });
 }
 
