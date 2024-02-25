@@ -4,11 +4,17 @@ const fs = require("fs");
 const mime = require("mime-types");
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const dotenv = require("dotenv");
+const Redis = require("ioredis");
 
 dotenv.config();
 
 const PROJECT_ID = process.env.PROJECT_ID;
+const REDIS_URI = "";
 
+/* Initializing redis publisher */
+const publisher = new Redis(REDIS_URI);
+
+/* Initializing S3 Client */
 const s3Client = new S3Client({
   region: "ap-south-1",
   credentials: {
@@ -17,27 +23,40 @@ const s3Client = new S3Client({
   },
 });
 
+/**
+ * Publishes a log to the Redis pub/sub channel for the current project.
+ * @param {object} log - The log object to publish.
+ */
+function publishLog(log) {
+  publisher.publish(`logs:${PROJECT_ID}`, JSON.stringify(log));
+}
+
 async function init() {
+  publishLog("🛠️  Build started...");
   const outDir = path.join(__dirname, "output");
 
   /* Running build command */
   const p = exec(`cd ${outDir} && npm install && npm run build`);
 
   p.stdout.on("data", function (data) {
+    publishLog(data.toString());
     console.log(data.toString());
   });
 
   p.stdout.on("error", function (data) {
+    publishLog("❗ Error", data.toString());
     console.log("❗ Error", data.toString());
   });
 
   p.on("close", async function () {
+    publishLog("🛠️  Build complete!");
     console.log("🛠️  Build complete!");
 
     const distFolderPath = path.join(__dirname, "output", "dist");
     const distFolderContent = fs.readdirSync(distFolderPath, { recursive: true });
 
-    console.log(`⏳ Uploading started ...`);
+    publishLog("⏳ Uploading started ...");
+    console.log("⏳ Uploading started ...");
 
     /* Uploading each file to S3 */
     for (const file of distFolderContent) {
@@ -55,10 +74,15 @@ async function init() {
 
       await s3Client.send(command);
 
-      console.log(`Uploaded ${filePath} ...`);
+      publishLog(`Uploaded ${file} ...`);
+      console.log(`Uploaded ${file} ...`);
     }
 
-    console.log("🚀 Upload complete!");
+    publishLog("🚀 Deployement complete!");
+    console.log("🚀 Deployement complete!");
+
+    /* Disconnect redis which will stop the task when completed */ 
+    publisher.disconnect();
   });
 }
 
