@@ -2,13 +2,35 @@ const express = require("express");
 const { generateSlug } = require("random-word-slugs");
 const { ECSClient, RunTaskCommand } = require("@aws-sdk/client-ecs");
 const dotenv = require("dotenv");
+const Redis = require("ioredis");
+const Websocket = require('ws');
 
 dotenv.config();
 
 const PORT = 9000;
+const REDIS_PORT = 9001;
+const REDIS_URI = '';
+
 const app = express();
+/* Initializing redis subscriber */
+const subscriber = new Redis(REDIS_URI);
+
+const wss = new Websocket.Server({ port: REDIS_PORT });
 
 app.use(express.json());
+
+subscriber.psubscribe("logs:*");
+wss.on("connection", async (ws, req) => {
+  console.log('Websocket Client connected...');
+  
+  subscriber.on("pmessage", (pattern, channel, message) => {
+    ws.send(message);
+  });
+
+  ws.on('close', () => {
+    console.log('Client disconnected');
+  });
+});
 
 /* Creating ECS client */
 const ecsClient = new ECSClient({
@@ -19,7 +41,7 @@ const ecsClient = new ECSClient({
   },
 });
 
-/* Task runner config */ 
+/* Task runner config */
 const config = {
   CLUSTER: "",
   TASK: "",
@@ -39,7 +61,7 @@ app.post("/api/project", async (req, res) => {
     networkConfiguration: {
       awsvpcConfiguration: {
         assignPublicIp: "ENABLED",
-        subnets: ["subnet-xxx", "subnet-xxx", "subnet-xxx"],
+        subnets: ["subnet-XXX", "subnet-XXX", "subnet-XXX"],
         securityGroups: ["sg-xxx"],
       },
     },
