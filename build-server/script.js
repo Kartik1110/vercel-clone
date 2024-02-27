@@ -28,7 +28,7 @@ const s3Client = new S3Client({
  * @param {object} log - The log object to publish.
  */
 function publishLog(log) {
-  publisher.publish(`logs:${PROJECT_ID}`, JSON.stringify(log));
+  publisher.publish(`logs:${PROJECT_ID}`, log);
 }
 
 async function init() {
@@ -78,8 +78,8 @@ async function init() {
       console.log(`Uploaded ${file} ...`);
     }
 
-    publishLog("🚀 Deployement complete!");
-    console.log("🚀 Deployement complete!");
+    publishLog("🚀 Deployment complete!");
+    console.log("🚀 Deployment complete!");
 
     /* Disconnect redis which will stop the task when completed */ 
     publisher.disconnect();
