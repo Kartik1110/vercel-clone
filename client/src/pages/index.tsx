@@ -23,6 +23,7 @@ export default function Home() {
     axios
       .post("http://localhost:9000/api/project", {
         gitURL: inputData?.gitURL,
+        slug: inputData?.slug,
       })
       .then(function (response) {
         setDeployResponse(response.data.data);
@@ -77,8 +78,9 @@ export default function Home() {
           placeholder="Enter your slug(optional)"
         />
         <button
-          className="p-2 my-4 rounded-lg text-lg font-semibold text-black bg-gradient-to-r from-yellow-400 to-green-600 hover:rounded-xl"
+          className="p-2 my-4 rounded-lg text-lg font-semibold text-black bg-gradient-to-r from-yellow-400 to-green-600 hover:rounded-xl disabled:cursor-not-allowed"
           onClick={onDeployHandler}
+          disabled={!inputData?.gitURL}
         >
           DEPLOY
         </button>

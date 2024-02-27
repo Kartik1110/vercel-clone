@@ -3,13 +3,14 @@ const { generateSlug } = require("random-word-slugs");
 const { ECSClient, RunTaskCommand } = require("@aws-sdk/client-ecs");
 const dotenv = require("dotenv");
 const Redis = require("ioredis");
-const Websocket = require('ws');
+const Websocket = require("ws");
+const cors = require("cors");
 
 dotenv.config();
 
 const PORT = 9000;
 const REDIS_PORT = 9001;
-const REDIS_URI = '';
+const REDIS_URI = "";
 
 const app = express();
 /* Initializing redis subscriber */
@@ -17,18 +18,20 @@ const subscriber = new Redis(REDIS_URI);
 
 const wss = new Websocket.Server({ port: REDIS_PORT });
 
+app.use(cors());
 app.use(express.json());
 
 subscriber.psubscribe("logs:*");
 wss.on("connection", async (ws, req) => {
-  console.log('Websocket Client connected...');
-  
+  console.log("Websocket Client connected...");
+
   subscriber.on("pmessage", (pattern, channel, message) => {
+    console.log(message);
     ws.send(message);
   });
 
-  ws.on('close', () => {
-    console.log('Client disconnected');
+  ws.on("close", () => {
+    console.log("Client disconnected");
   });
 });
 
@@ -48,9 +51,9 @@ const config = {
 };
 
 app.post("/api/project", async (req, res) => {
-  const { gitURL } = req.body;
+  const { gitURL, slug } = req.body;
   /* Random project slug */
-  const projectSlug = generateSlug();
+  const projectSlug = slug ? slug : generateSlug();
 
   /* Create ECS command */
   const command = new RunTaskCommand({
@@ -61,7 +64,7 @@ app.post("/api/project", async (req, res) => {
     networkConfiguration: {
       awsvpcConfiguration: {
         assignPublicIp: "ENABLED",
-        subnets: ["subnet-XXX", "subnet-XXX", "subnet-XXX"],
+        subnets: ["subnet-xxx", "subnet-xxx", "subnet-xxx"],
         securityGroups: ["sg-xxx"],
       },
     },
